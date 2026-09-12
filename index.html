@@ -1,1 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Water Bottle Detector</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f9ff;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
+        /* Container Card */
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 { color: #0284c7; margin-bottom: 10px; font-size: 28px; }
+        h2 { color: #0f172a; margin-top: 20px; margin-bottom: 10px; font-size: 20px; text-align: left; }
+        p { font-size: 15px; color: #475569; line-height: 1.6; text-align: left; margin-bottom: 12px; }
+
+        /* Team & Journey Section */
+        .section-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #0284c7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .team-list {
+            list-style-type: none;
+            padding-left: 0;
+            text-align: left;
+        }
+
+        .team-list li {
+            padding: 6px 0;
+            color: #334155;
+            font-weight: 500;
+        }
+
+        /* Primary Button */
+        .btn-primary {
+            background-color: #0284c7;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .btn-primary:hover { background-color: #0369a1; transform: translateY(-2px); }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            float: left;
+        }
+        .btn-secondary:hover { background-color: #cbd5e1; }
+
+        /* Detector View Specific Styles */
+        #webcam-container {
+            margin: 20px auto;
+            border: 4px solid #0284c7;
+            border-radius: 12px;
+            overflow: hidden;
+            width: 320px;
+            height: 320px;
+            background-color: #000;
+        }
+
+        #label-container {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 15px;
+            color: #0f172a;
+            min-height: 40px;
+        }
+
+        /* View Toggle Logic */
+        #app-view { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- PAGE 1: LANDING PAGE -->
+    <div id="landing-view" class="card">
+        <h1>🍾 Bottle Detector</h1>
+        <p style="text-align: center; color: #64748b; margin-bottom: 25px;">
+            AI-Powered Real-Time Fluid Level Detection
+        </p>
+
+        <!-- TEAM DETAILS -->
+        <h2>👥 About Our Team</h2>
+        <div class="section-box">
+            <ul class="team-list">
+                <li><strong>Team Name:</strong>3 Kings</li>
+                <li><strong>Team Members:</strong> Nakul R Krishna, Tharun S</li>
+                <li><strong>Event:</strong> Useless Projects 3.0</li>
+            </ul>
+        </div>
+
+        <!-- OUR JOURNEY -->
+        <h2>🚀 Our Journey</h2>
+        <div class="section-box">
+            <p>
+                This is our very first makeathon.For useless projects, our first idea revolved around chips packects which eventually turned into bottles and webcam.
+            </p>
+            <p>
+                Within hours, we trained an image classification neural network using Google Teachable Machine, integrated client-side computer vision via TensorFlow.js, and added real-time voice alerts using the Web Speech API which allowed the model to recognize three states.The website uses your webcam to detect and verbally announce whether a bottle is empty, not empty, or missing.We created the code for the website in VS code using these languages.HTML5 to make the skeleton of the website.CSS3 to control the visual presentation and design,it also handles switching between two pages.JavaScript for AI model loading, camera vision and text to speech engine.
+            </p>
+        </div>
+
+        <!-- GO TO PROJECT BUTTON -->
+        <button class="btn-primary" onclick="showAppView()">🚀 Go to Project</button>
+    </div>
+
+
+    <!-- PAGE 2: REAL PROJECT DETECTOR PAGE -->
+    <div id="app-view" class="card">
+        <button class="btn-secondary" onclick="showLandingView()">← Back to Home</button>
+        <div style="clear: both;"></div>
+
+        <h1>🍾 Bottle Detector</h1>
+        <p style="text-align: center;">AI Detection & Audio Announcement</p>
+        
+        <button class="btn-primary" type="button" onclick="init()">Start Camera</button>
+
+        <div id="webcam-container"></div>
+        <div id="label-container">Click "Start Camera" to begin</div>
+    </div>
+
+
+    <!-- TensorFlow.js and Teachable Machine Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script type="text/javascript">
+        // -------------------------------------------------------------
+        // PASTE YOUR TEACHABLE MACHINE LINK BELOW INSIDE THE QUOTES!
+        // -------------------------------------------------------------
+        const URL = "https://teachablemachine.withgoogle.com/models/8KK8kC-Ir/"; 
+
+        let model, webcam, labelContainer, maxPredictions;
+        let lastSpokenStatus = "";
+        let speechCooldown = false;
+
+        // View Navigation Functions
+        function showAppView() {
+            document.getElementById("landing-view").style.display = "none";
+            document.getElementById("app-view").style.display = "block";
+        }
+
+        function showLandingView() {
+            document.getElementById("app-view").style.display = "none";
+            document.getElementById("landing-view").style.display = "block";
+        }
+
+        async function init() {
+            labelContainer = document.getElementById("label-container");
+
+            try {
+                console.log("🚀 Starting initialization process...");
+                labelContainer.innerText = "⏳ Checking model URL...";
+
+                if (URL.includes("YOUR_MODEL_ID") || URL.includes("[...]")) {
+                    throw new Error("Please replace YOUR_MODEL_ID with your actual Teachable Machine URL!");
+                }
+
+                let formattedURL = URL.trim();
+                if (!formattedURL.endsWith("/")) {
+                    formattedURL += "/";
+                }
+
+                const modelURL = formattedURL + "model.json";
+                const metadataURL = formattedURL + "metadata.json";
+
+                labelContainer.innerText = "⏳ Fetching AI Model...";
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                labelContainer.innerText = "⏳ Requesting Webcam Access...";
+
+                const flip = true; 
+                webcam = new tmImage.Webcam(320, 320, flip);
+                await webcam.setup(); 
+                await webcam.play();
+
+                const webcamContainer = document.getElementById("webcam-container");
+                webcamContainer.innerHTML = ""; 
+                webcamContainer.appendChild(webcam.canvas);
+
+                labelContainer.innerText = "🟢 AI Model Ready! Detecting...";
+                window.requestAnimationFrame(loop);
+
+            } catch (error) {
+                console.error("❌ Initialization failed:", error);
+                labelContainer.innerHTML = `<span style="color: #dc2626;">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function loop() {
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            try {
+                const prediction = await model.predict(webcam.canvas);
+                
+                let highestProb = 0;
+                let currentStatus = "";
+
+                for (let i = 0; i < maxPredictions; i++) {
+                    if (prediction[i].probability > highestProb) {
+                        highestProb = prediction[i].probability;
+                        currentStatus = prediction[i].className;
+                    }
+                }
+
+                if (highestProb > 0.70) {
+                    let displayText = currentStatus;
+                    if (currentStatus.toLowerCase().includes("full")) {
+                        displayText = "The bottle is not empty";
+                    }
+
+                    labelContainer.innerHTML = `${displayText} <br><span style="font-size: 14px; font-weight: normal; color: #64748b;">Confidence: ${Math.round(highestProb * 100)}%</span>`;
+                    
+                    if (displayText !== lastSpokenStatus && !speechCooldown) {
+                        speakText(displayText);
+                        lastSpokenStatus = displayText;
+                        
+                        speechCooldown = true;
+                        setTimeout(() => { speechCooldown = false; }, 3000);
+                    }
+                }
+            } catch (err) {
+                console.error("❌ Prediction loop error:", err);
+            }
+        }
+
+        function speakText(status) {
+            if ('speechSynthesis' in window) {
+                let announcement = "";
+                
+                if (status.toLowerCase().includes("not empty")) {
+                    announcement = "The bottle is not empty!";
+                } else if (status.toLowerCase().includes("empty")) {
+                    announcement = "The bottle is empty!";
+                } else {
+                    return;
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(announcement);
+                utterance.rate = 1; 
+                utterance.pitch = 1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+    </script>
+</body>
+</html>
