@@ -48,13 +48,13 @@ For Software:
 For Software:
 
 # Screenshots (Add at least 3)
-![![alt text](image.png)](Add screenshot 1 here with proper name)
+![![alt text](image.png)]
 *AI model training using teachable machine*
 
-![![alt text](image-1.png)](Add screenshot 2 here with proper name)
+![![alt text](image-1.png)]
 *Developing in VS code*
 
-![![alt text](image-2.png)](Add screenshot 3 here with proper name)
+![![alt text](image-2.png)]
 *Interface of the website*
 
 # Diagrams
